@@ -9,17 +9,36 @@ public class UiBucket : MonoBehaviour
     public TextMeshProUGUI indexText;
     public UiItem uiItemPrefab;
 
-    public void Set<TKey, TValue>(int index, KeyValuePair<TKey, TValue> kvp)
-    {
-        indexText.text = string.Format(indexFormat, index);
+    private List<UiItem> uiItems;
 
-        InstantiateItem(kvp);
+    public int Index { get; private set; }
+    public int Count => uiItems.Count;
+
+    private void Awake()
+    {
+        uiItems = new List<UiItem>();
     }
 
     public void Set<TKey, TValue>(int index, LinkedList<KeyValuePair<TKey, TValue>> bucket)
     {
-        indexText.text = string.Format(indexFormat, index);
+        SetIndex(index);
+        InstantiateItem(bucket);
+    }
 
+    public void Set<TKey, TValue>(int index, KeyValuePair<TKey, TValue> pair)
+    {
+        SetIndex(index);
+        InstantiateItem(pair);
+    }
+
+    public void SetIndex(int index)
+    {
+        Index = index;
+        indexText.text = string.Format(indexFormat, Index);
+    }
+
+    public void InstantiateItem<TKey, TValue>(LinkedList<KeyValuePair<TKey, TValue>> bucket)
+    {
         foreach (var kvp in bucket)
         {
             InstantiateItem(kvp);
@@ -30,5 +49,24 @@ public class UiBucket : MonoBehaviour
     {
         var item = Instantiate(uiItemPrefab, transform);
         item.Set(kvp);
+        uiItems.Add(item);
+    }
+
+    public void InstantiateItem<TKey, TValue>(TKey key, TValue value)
+    {
+        InstantiateItem(new KeyValuePair<TKey, TValue>(key, value));
+    }
+
+    public void RemoveItem<TKey>(TKey key)
+    {
+        foreach (var item in uiItems)
+        {
+            bool removed = item.RemoveIf(key);
+            if (removed)
+            {
+                uiItems.Remove(item);
+                break;
+            }
+        }
     }
 }

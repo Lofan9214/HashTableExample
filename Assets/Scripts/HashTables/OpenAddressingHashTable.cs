@@ -14,7 +14,7 @@ public enum OpenAddressingStrategy
     DoubleHashing
 }
 
-public class OpenAddressingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
+public class OpenAddressingHashTable<TKey, TValue> : IDictionary<TKey, TValue>, IHashTableContainerGet<TKey, TValue>, IHashTableIndexGetter<TKey, TValue>
 {
     private const int DefaultCapacity = 16;
     private const float LoadFactor = 0.6f;
@@ -64,6 +64,30 @@ public class OpenAddressingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
         return Mathf.Abs(hash) % s;
     }
 
+    public int GetArrayIndex(TKey key)
+    {
+        if (key == null)
+        {
+            throw new ArgumentException(nameof(key));
+        }
+
+        var indexEnumerator = GetIndexEnumerator(key);
+
+        while (indexEnumerator.MoveNext())
+        {
+            int index = indexEnumerator.Current;
+            if (occupied[index] && table[index].Key.Equals(key))
+            {
+                return index;
+            }
+            if (!deleted[index] && !occupied[index])
+            {
+                break;
+            }
+        }
+        return -1;
+    }
+
     public TValue this[TKey key]
     {
         get
@@ -111,11 +135,22 @@ public class OpenAddressingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
         }
     }
 
-    public KeyValuePair<TKey,TValue>[] Containers
+    public LinkedList<KeyValuePair<TKey, TValue>>[] Containers
     {
         get
         {
-            return table;
+            LinkedList<KeyValuePair<TKey, TValue>>[] result = new LinkedList<KeyValuePair<TKey, TValue>>[size];
+
+            for (int i = 0; i < size; ++i)
+            {
+                if (occupied[i])
+                {
+                    result[i] = new LinkedList<KeyValuePair<TKey, TValue>>();
+                    result[i].AddLast(table[i]);
+                }
+            }
+
+            return result;
         }
     }
 

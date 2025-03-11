@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ChainingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
+public class ChainingHashTable<TKey, TValue> : IDictionary<TKey, TValue>, IHashTableContainerGet<TKey, TValue>, IHashTableIndexGetter<TKey, TValue>
 {
     private const int DefaultCapacity = 16;
     private const float LoadFactor = 0.75f;
@@ -39,6 +39,17 @@ public class ChainingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
 
         int hash = key.GetHashCode();
         return Mathf.Abs(hash) % s;
+    }
+
+    public int GetArrayIndex(TKey key)
+    {
+        if (key == null)
+        {
+            throw new ArgumentException(nameof(key));
+        }
+        
+        int hash = key.GetHashCode();
+        return Mathf.Abs(hash) % size;
     }
 
     public TValue this[TKey key]

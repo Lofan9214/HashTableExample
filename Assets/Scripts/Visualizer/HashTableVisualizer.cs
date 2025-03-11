@@ -13,13 +13,16 @@ public class HashTableVisualizer : MonoBehaviour
 
     public UiBucket uiBucketPrefab;
 
-    private List<UiBucket> buckets = new List<UiBucket>();
+    private ChainingHashTable<int, UiBucket> buckets = new ChainingHashTable<int, UiBucket>();
 
     public Transform bucketView;
-    public TMP_Dropdown hashTableType;
-    public TMP_Dropdown openAddressingStrategy;
+    public TMP_Dropdown hashTableTypeDropDown;
+    public TMP_Dropdown openAddressingStrategyDropDown;
     public TMP_InputField inputKey;
     public TMP_InputField inputValue;
+
+    private HashTableType hashTableType;
+    private OpenAddressingStrategy strategy;
 
     public IDictionary<string, string> hashTable;
 
@@ -32,61 +35,50 @@ public class HashTableVisualizer : MonoBehaviour
     {
         foreach (var bucket in buckets)
         {
-            Destroy(bucket.gameObject);
+            Destroy(bucket.Value.gameObject);
         }
         buckets.Clear();
 
-        if (dict is ChainingHashTable<TKey, TValue> chain)
+        var containerGetter = (IHashTableContainerGet<string, string>)dict;
+        var containers = containerGetter.Containers;
+        for (int i = 0; i < containers.Length; ++i)
         {
-            var containers = chain.Containers;
-
-            for (int i = 0; i < containers.Length; ++i)
+            if (containers[i] == null || containers[i].Count == 0)
             {
-                if (containers[i] == null || containers[i].Count == 0)
-                {
-                    continue;
-                }
-                var bucket = Instantiate(uiBucketPrefab, bucketView);
-                bucket.Set(i, containers[i]);
-                buckets.Add(bucket);
+                continue;
             }
-        }
-        else if (dict is OpenAddressingHashTable<TKey, TValue> open)
-        {
-            var containers = open.Containers;
-            var occupied = open.Occupied;
-
-            for (int i = 0; i < containers.Length; ++i)
-            {
-                if (!occupied[i])
-                {
-                    continue;
-                }
-                var bucket = Instantiate(uiBucketPrefab, bucketView);
-                bucket.Set(i, containers[i]);
-                buckets.Add(bucket);
-            }
+            var bucket = InstantiateBucket(i);
+            bucket.InstantiateItem(containers[i]);
         }
     }
-    
 
     private void Refresh()
     {
         Refresh(hashTable);
     }
 
+    public UiBucket InstantiateBucket(int index)
+    {
+        var bucket = Instantiate(uiBucketPrefab, bucketView);
+        bucket.SetIndex(index);
+        buckets.Add(index, bucket);
+        return bucket;
+    }
+
     public void CreateHashTable()
     {
-        switch (hashTableType.value)
+        switch (hashTableTypeDropDown.value)
         {
             case (int)HashTableType.Chaining:
                 hashTable = new ChainingHashTable<string, string>();
                 break;
             case (int)HashTableType.OpenAddressing:
-                var strategy = (OpenAddressingStrategy)openAddressingStrategy.value;
+                var strategy = (OpenAddressingStrategy)openAddressingStrategyDropDown.value;
                 hashTable = new OpenAddressingHashTable<string, string>(strategy);
                 break;
         }
+        hashTableType = (HashTableType)hashTableTypeDropDown.value;
+        strategy = (OpenAddressingStrategy)openAddressingStrategyDropDown.value;
         Refresh();
     }
 
@@ -94,22 +86,82 @@ public class HashTableVisualizer : MonoBehaviour
     {
         hashTable.Add(inputKey.text, inputValue.text);
         Refresh();
+        return;
+        //AddPair(inputKey.text, inputValue.text);
+    }
+
+    public void AddPair(string key, string value)
+    {
+        hashTable.Add(key, value);
+        var indexGetter = (IHashTableIndexGetter<string, string>)hashTable;
+        int arrayIndex = indexGetter.GetArrayIndex(key);
+
+        if (arrayIndex < 0 || !buckets.ContainsKey(arrayIndex))
+        {
+            var bucket = InstantiateBucket(arrayIndex);
+            bucket.InstantiateItem(key, value);
+        }
+        else
+        {
+            buckets[arrayIndex].InstantiateItem(key, value);
+        }
     }
 
     public void RemovePair()
     {
-        hashTable.Remove(inputKey.text);
-        Refresh();
+        //hashTable.Remove(inputKey.text);
+        //Refresh();
+
+        RemovePair(inputKey.text);
+    }
+
+    public void RemovePair(string key)
+    {
+        if (!hashTable.ContainsKey(key))
+        {
+            return;
+        }
+        var indexGetter = (IHashTableIndexGetter<string, string>)hashTable;
+        int arrayIndex = indexGetter.GetArrayIndex(key);
+        hashTable.Remove(key);
+
+        buckets[arrayIndex].RemoveItem(key);
+
+        if (buckets[arrayIndex].Count == 0)
+        {
+            Destroy(buckets[arrayIndex].gameObject);
+            buckets.Remove(arrayIndex);
+        }
     }
 
     public void ClearTable()
     {
         foreach (var bucket in buckets)
         {
-            Destroy(bucket.gameObject);
+            Destroy(bucket.Value.gameObject);
         }
         buckets.Clear();
         hashTable.Clear();
+    }
+
+    public void RandomValueInsert()
+    {
+        if (hashTableType != (HashTableType)hashTableTypeDropDown.value
+            || (hashTableType == HashTableType.OpenAddressing
+                && strategy != (OpenAddressingStrategy)openAddressingStrategyDropDown.value))
+        {
+            CreateHashTable();
+        }
+
+        for (int i = 0; i < 100; ++i)
+        {
+            string randomKey = Random.Range(0, 100000).ToString();
+            string randomValue = Random.Range(0, 100000).ToString();
+
+            hashTable.Add(randomKey, randomValue);
+            //AddPair(randomKey, randomValue);
+        }
+
         Refresh();
     }
 }
