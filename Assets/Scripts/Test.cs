@@ -17,6 +17,7 @@ public class Test : MonoBehaviour
     public HashTableType hashTableType;
     public OpenAddressingStrategy openAddressingStrategy;
 
+    public HashTableVisualizer visualizer;
 
     void Start()
     {
@@ -89,7 +90,6 @@ public class Test : MonoBehaviour
             Debug.Log(kvp.Key);
         }
 
-
         while (randomQueue.Count > 0)
         {
             int index = randomQueue.Dequeue();
@@ -104,6 +104,8 @@ public class Test : MonoBehaviour
 
             hashtable.Remove(index);
         }
+
+        visualizer.Refresh(hashtable);
 
         //for (int i = 0; i < 100; ++i)
         //{

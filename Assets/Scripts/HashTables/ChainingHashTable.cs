@@ -88,6 +88,14 @@ public class ChainingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
         }
     }
 
+    public LinkedList<KeyValuePair<TKey, TValue>>[] Containers
+    {
+        get
+        {
+            return table;
+        }
+    }
+
     public ICollection<TKey> Keys
     {
         get
@@ -178,7 +186,10 @@ public class ChainingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
     {
         for (int i = 0; i < size; ++i)
         {
-            table[i].Clear();
+            if (table[i] != null)
+            {
+                table[i].Clear();
+            }
         }
         count = 0;
     }

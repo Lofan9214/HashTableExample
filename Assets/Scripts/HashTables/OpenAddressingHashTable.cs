@@ -111,6 +111,22 @@ public class OpenAddressingHashTable<TKey, TValue> : IDictionary<TKey, TValue>
         }
     }
 
+    public KeyValuePair<TKey,TValue>[] Containers
+    {
+        get
+        {
+            return table;
+        }
+    }
+
+    public bool[] Occupied
+    {
+        get
+        {
+            return occupied;
+        }
+    }
+
     public ICollection<TKey> Keys
     {
         get
